@@ -153,12 +153,14 @@ if __name__ == '__main__':
         # 新增至資料庫
         newdf = newdf.reset_index()
         newdf = pd.merge(newdf, parts_df, left_on='name', right_on='name', how='inner')
-        newdf['date'] = datetime.utcnow()
+        date=datetime.now()
+        newdf['date'] = date
         print('insert------------------------------------------')
         print(newdf)
         newdf.to_sql(table, engine, if_exists='append', index=False)
 
         print('--------------------------------------------------------------------------------------------------------')
+        print(date)
         print('已新增資料,共 ' + str(newdf.shape[0]) + '筆!')
         print('--------------------------------------------------------------------------------------------------------')
         alled = time.time()
