@@ -67,10 +67,10 @@ def record(ip, q, i):
 # end def------------------------------------------------------------
 allst = time.time()
 threads = []
-ip1 = '192.168.3.1'
-ip2 = '192.168.3.91'
-band = [4, 5, 24, 27, 28, 29, 36, 43, 44, 45, 46, 66, 67,
-        70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89]
+ip1 = '192.168.1.50'
+ip2 = '192.168.1.53'
+# band ip 黑名單
+band = [1, 2]
 stip = ipaddress.ip_address(ip1)
 edip = ipaddress.ip_address(ip2)
 n = int(edip) - int(stip) + 1
@@ -103,10 +103,10 @@ newdf.drop(['parts'], axis=1, inplace=True)
 
 
 # database setting
-table = "test_tb4"
+table = "test"
 sql = "Select name,date,ip,status from " + table
 engine = sqla.create_engine(
-    'mysql+mysqlconnector://usr:usr@192.168.1.110:3306/test')
+    'mysql+mysqlconnector://usr:123456@192.168.1.188:3306/test')
 # print(engine)
 
 # compare status
