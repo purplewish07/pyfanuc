@@ -70,9 +70,9 @@ class pyfanuc(object):
 			self.connected=False
 			print(e)
 
-		finally:
-			time.sleep(2)
-			print('sleep 2 sec')
+		# finally:
+		# 	time.sleep(2)
+		# 	print('sleep 2 sec')
 		return False
 
 	def _show_requsts(self,cap):

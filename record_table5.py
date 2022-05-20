@@ -68,7 +68,7 @@ def record(ip, q, i):
 allst = time.time()
 threads = []
 ip1 = '192.168.1.50'
-ip2 = '192.168.1.53'
+ip2 = '192.168.1.54'
 # band ip 黑名單
 band = [1, 2]
 stip = ipaddress.ip_address(ip1)
@@ -104,14 +104,29 @@ newdf.drop(['parts'], axis=1, inplace=True)
 
 # database setting
 table = "test"
-sql = "Select name,date,ip,status from " + table
 engine = sqla.create_engine(
     'mysql+mysqlconnector://usr:123456@192.168.1.188:3306/test')
 # print(engine)
+check=engine.has_table(table)
+if not check:
+    print('table doesn\'t exist')
+    #creact table
+    meta=sqla.MetaData()
+    test=sqla.Table(
+        'test',meta,
+        sqla.Column('ID',sqla.BIGINT,primary_key=True),
+        sqla.Column('date', sqla.TIMESTAMP, default=datetime.utcnow),
+        sqla.Column('ip',sqla.String(16)),
+        sqla.Column('status',sqla.Integer),
+        sqla.Column('parts',sqla.Integer),
+    )
+    meta.create_all(engine)
 
 # compare status
 sql = "Select * from " + table
 predf = pd.read_sql_query(sql, engine)
+print(predf)
+
 preid = predf[['ID', 'name']].groupby(['name']).max().reset_index()
 preid.drop(['name'], axis=1, inplace=True)
 print(preid.shape[0])
