@@ -234,23 +234,3 @@ Stop Transfer
 |:-----------:|:-------:|:-------:|:-------:|
 | A0 A0 A0 A0 |  00 01  |  17 02  |  00 00  |
 
-# samples
-
-## sample on raspberry pi 2 only with python3 and without x86-emu/wine etc.
-
-![Test Image](/images/test.png)
-
-## sample on Samsung A51 with Pydroid-Android 
-
-import pyfanuc
-conn=pyfanuc('192.168.0.61')
-if conn.connect():
-	print("connected")
-	print('type:'+conn.sysinfo['cnctype'].decode())
-	print(conn.getdatetime())
-	print(conn.statinfo())
-if conn.disconnect():
-	print("disconnected")
-
-![Test Image](/images/Pydroid_3_Screenshot_A51.png)
-
