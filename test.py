@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 from pyfanuc import pyfanuc
 
-conn = pyfanuc('192.168.3.65')
+conn = pyfanuc('192.168.1.52')
 if conn.connect():
     parts = conn.readmacro(3901)
-    cycle = conn.readparam(-1 , 1240,1250)
+    # cycle = conn.readparam(-1 , 1240,1250)
     print(parts)
-    print(cycle)
+    # print(cycle)
     print("Verbunden")
     print("Lese SPS-Wert D2204 als 16 Bit")
     n = conn.readpmc(1, 9, 2204, 1)
@@ -21,12 +21,16 @@ if conn.connect():
     # print("Lese Achsen")
     # for key, val in conn.readaxis(conn.ABS | conn.SKIP | conn.REL | conn.REF).items():
     #     print(key, val)
-    print("Lese Programm O0010")
-    print(conn.getprog("O0010"))
-
+    print("exec Programm")
+    print(conn.readprognum())
+    print("Lese Programm O1")
+    prog=conn.getprog("O1")
+    f=open('./O1','a+')
+    f.writelines(prog)
+    f.close
     print("machine status")
     print(conn.sysinfo)
-    print(conn.statinfo())
-    for key, val in conn.statinfo().items():
+    print(conn.statinfo)
+    for key, val in conn.statinfo.items():
         print(key, val)
 

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 from pyfanuc import pyfanuc
 import time
-ip='192.168.3.65'
+ip='192.168.1.52'
 conn = pyfanuc(ip)
 
 if conn.connect():
     print(ip+": connected")
     print('type:' + conn.sysinfo['cnctype'].decode() + 'i')
-    print(conn.statinfo())
+    print(conn.getstatinfo())
     # for t in conn.readdir_complete("//CNC_MEM/USER/PATH1/"):
     #     print(t)
     print("//CNC_MEM/USER/PATH1/")
