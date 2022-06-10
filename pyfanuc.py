@@ -253,9 +253,10 @@ class pyfanuc(object):
 		"intern function - pack simple command"
 		cmd=pack(">HHH",c1,c2,c3)
 		# print('cmd:',cmd)
+		print("v1~v5",pack(">iiiii",v1,v2,v3,v4,v5))
 		self.sock.sendall(self._encap(pyfanuc.FTYPE_VAR_REQU,cmd+pack(">iiiii",v1,v2,v3,v4,v5)+pl))
 		t=self._decap(self.sock.recv(1500))
-		# print('t:',t)
+		print('t:',t)
 		if t["len"]==0:
 			return {"len":-1}
 		elif t["ftype"]!=pyfanuc.FTYPE_VAR_RESP:
@@ -489,6 +490,7 @@ class pyfanuc(object):
 	def readmacro(self,first,last=0):
 		if last==0: last=first
 		st=self._req_rdsingle(1,1,0x15,first,last)
+		print(st)
 		if st["len"]<=0:
 			return
 		r={}

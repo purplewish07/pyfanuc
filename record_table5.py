@@ -65,21 +65,24 @@ def record(ip, q, i):
 # end def------------------------------------------------------------
 
 if __name__ == '__main__':
-    ip1 = '192.168.1.50'
-    ip2 = '192.168.1.54'
+    subnet = '192.168.1.0'
+    iparr = [101,102,52,53]
+    # ip1 = '192.168.1.50'
+    # ip2 = '192.168.1.54'
     # band ip 黑名單
     band = [1, 2] #for example
     while True:
         allst = time.time()
         threads = []
-        stip = ipaddress.ip_address(ip1)
-        edip = ipaddress.ip_address(ip2)
-        n = int(edip) - int(stip) + 1
+        n = len(iparr)
+        st = 'cnc1'
+        ed = 'cnc'+ str(n)
         q = [[] for _ in range(n)]
-        print('from', stip, 'to', edip, 'seq', n)
+        print('from', st, 'to', ed, 'seq', n)
         print('------------------------------------------')
         for i in range(n):
-            ip = stip + i
+            ip = ipaddress.ip_address(subnet[0:-1] + str(iparr[i]))
+            print(ip)
             threads.append(threading.Thread(target=record, args=(ip, q, i)))
             if not(i + 1 in band):
                 threads[i].start()
@@ -145,11 +148,11 @@ if __name__ == '__main__':
                 newdf = newdf[predf.ne(newdf).any(axis=1)]
 
         # global errlog
-        f=open('errlog','a+')
-        f.writelines(str(datetime.now())+'\n')
-        for e in errlog:
-            f.writelines(str(e)+'\n')
-        f.close()
+        # f=open('errlog','a+')
+        # f.writelines(str(datetime.now())+'\n')
+        # for e in errlog:
+        #     f.writelines(str(e)+'\n')
+        # f.close()
         # 新增至資料庫
         newdf = newdf.reset_index()
         newdf = pd.merge(newdf, parts_df, left_on='name', right_on='name', how='inner')

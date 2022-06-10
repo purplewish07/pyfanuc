@@ -3,9 +3,13 @@ from pyfanuc import pyfanuc
 
 conn = pyfanuc('192.168.1.52')
 if conn.connect():
-    parts = conn.readmacro(3901)
+    # parts = conn.readmacro(3901)
+    tool = conn.readmacro(first=11025,last=0)
+    # tool = conn.readmacro(first=11001)
+    # tool = conn.readparam(-1 , 10001,10002)
     # cycle = conn.readparam(-1 , 1240,1250)
-    print(parts)
+    # print(parts)
+    print(tool)
     # print(cycle)
     print("Verbunden")
     print("Lese SPS-Wert D2204 als 16 Bit")
@@ -23,11 +27,11 @@ if conn.connect():
     #     print(key, val)
     print("exec Programm")
     print(conn.readprognum())
-    print("Lese Programm O1")
-    prog=conn.getprog("O1")
-    f=open('./O1','a+')
-    f.writelines(prog)
-    f.close
+    # print("Lese Programm O1")
+    # prog=conn.getprog("O1")
+    # f=open('./O1','a+')
+    # f.writelines(prog)
+    # f.close
     print("machine status")
     print(conn.sysinfo)
     print(conn.statinfo)
