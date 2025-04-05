@@ -181,12 +181,8 @@ def play_mp3(file_path):
     except FileNotFoundError:
         print("文件未找到或 mpg123 未安裝！")
 
-# 使用相對路徑，指向 sound 資料夾內的 MP3 文件
-play_mp3("./sound/CNC01stop.mp3")
-
-
-
-
+# 使用絕對路徑，指向 sound 資料夾內的 MP3 文件
+play_mp3("/home/que/github_repo/pyfanuc/sound/CNC01stop.mp3")
 
 
 
