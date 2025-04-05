@@ -17,6 +17,7 @@ errlog=[]
 
 def record(ip, q, i):
     st = time.time()
+    stat=9
     parts = None
     try:
         conn = pyfanuc(str(ip))
@@ -49,6 +50,7 @@ def record(ip, q, i):
             print('(' + str(ip) + ')' + log)
             errlog.append(['(' + str(ip) + ')' + log])
             log = 999
+
     finally:
         conn.disconnect()
 
@@ -56,10 +58,11 @@ def record(ip, q, i):
     t = round(end - st, 3)
     print(i + 1, 'prossed(' + str(ip) + '):', t, parts)
 
-    if(flag):
-        arr = [str(ip), stat, t, parts]
-    else:
-        arr = [str(ip), log, t, parts]
+    # if(flag):
+    #     arr = [str(ip), stat, t, parts]
+    # else:
+    #     arr = [str(ip), log, t, parts]
+    arr= [str(ip), stat, t, parts]
     q[i] = arr
     
 
@@ -68,7 +71,7 @@ def record(ip, q, i):
 allst = time.time()
 threads = []
 ip1 = '192.168.1.168'
-ip2 = '192.168.1.169'
+ip2 = '192.168.1.170'
 band = [4, 5, 24, 27, 28, 29, 36, 43, 44, 45, 46, 66, 67,
         70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89]
 stip = ipaddress.ip_address(ip1)
@@ -129,11 +132,11 @@ if preid.shape[0] != 0:
     newdf = newdf[predf.ne(newdf).any(axis=1)]
 
 # global errlog
-f=open('errlog','a+')
-f.writelines(str(datetime.now())+'\n')
-for e in errlog:
-    f.writelines(str(e)+'\n')
-f.close()
+# f=open('errlog','a+')
+# f.writelines(str(datetime.now())+'\n')
+# for e in errlog:
+#     f.writelines(str(e)+'\n')
+# f.close()
 # 新增至資料庫
 newdf = newdf.reset_index()
 newdf = pd.merge(newdf, parts_df, left_on='name', right_on='name', how='inner')
