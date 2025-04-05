@@ -159,17 +159,37 @@ newdf.to_sql(table, engine, if_exists='append', index=False)
 
 # play_mp3(r".\sound\CNC01stop.mp3")
 
-def play_mp3_with_mpg123(file_path):
-    # 確保 mpg123.exe 已在環境變數內，或指定完整路徑
-    mpg123_path = r"D:\mpg123-1.32.10-x86-64\mpg123.exe"
+# def play_mp3_with_mpg123(file_path):
+#     # 確保 mpg123.exe 已在環境變數內，或指定完整路徑
+#     mpg123_path = r"D:\mpg123-1.32.10-x86-64\mpg123.exe"
+#     try:
+#         # 執行 mpg123 播放音樂
+#         subprocess.run([mpg123_path, file_path], check=True)
+#     except subprocess.CalledProcessError as e:
+#         print(f"播放失敗，錯誤：{e}")
+
+# # 撥放音樂文件
+# play_mp3_with_mpg123(r".\sound\CNC01stop.mp3")
+
+import subprocess
+
+def play_mp3(file_path):
     try:
-        # 執行 mpg123 播放音樂
-        subprocess.run([mpg123_path, file_path], check=True)
+        # 執行 mpg123 命令來播放音樂
+        subprocess.run(["mpg123", file_path], check=True)
     except subprocess.CalledProcessError as e:
         print(f"播放失敗，錯誤：{e}")
+    except FileNotFoundError:
+        print("請確保 mpg123 已安裝且正確配置！")
 
-# 撥放音樂文件
-play_mp3_with_mpg123(r".\sound\CNC01stop.mp3")
+
+# # 撥放音樂文件
+play_mp3(r".\sound\CNC01stop.mp3")
+
+
+
+
+
 
 
 print('--------------------------------------------------------------------------------------------------------')
