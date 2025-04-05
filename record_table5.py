@@ -172,17 +172,17 @@ newdf.to_sql(table, engine, if_exists='append', index=False)
 # play_mp3_with_mpg123(r".\sound\CNC01stop.mp3")
 
 #WSL
-def play_mp3(file_path):
-    try:
-        # 播放位於專案目錄中的 sound 資料夾內的 MP3 文件
-        subprocess.run(["mpg123", file_path], check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"播放失敗，錯誤：{e}")
-    except FileNotFoundError:
-        print("文件未找到或 mpg123 未安裝！")
+# def play_mp3(file_path):
+#     try:
+#         # 播放位於專案目錄中的 sound 資料夾內的 MP3 文件
+#         subprocess.run(["mpg123", file_path], check=True)
+#     except subprocess.CalledProcessError as e:
+#         print(f"播放失敗，錯誤：{e}")
+#     except FileNotFoundError:
+#         print("文件未找到或 mpg123 未安裝！")
 
-# 使用絕對路徑，指向 sound 資料夾內的 MP3 文件
-play_mp3("/home/que/github_repo/pyfanuc/sound/CNC01stop.mp3")
+# # 使用絕對路徑，指向 sound 資料夾內的 MP3 文件
+# play_mp3("/home/que/github_repo/pyfanuc/sound/CNC01stop.mp3")
 
 
 
