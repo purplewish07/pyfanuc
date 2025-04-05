@@ -13,16 +13,21 @@ import threading
 import pandas as pd
 import sqlalchemy as sqla
 from datetime import datetime
+import subprocess
+
+
 errlog=[]
 
 def record(ip, q, i):
     st = time.time()
     stat=9
     parts = None
+    statinfo = None
     try:
         conn = pyfanuc(str(ip))
         if conn.connect():
             stat = conn.statinfo['run']
+            statinfo = conn.statinfo
             # print(ip,'|type:' + conn.sysinfo['cnctype'].decode() + 'i','|run_status: ' ,stat)
             parts = conn.readmacro(3901).get(3901)
             flag = True
@@ -56,8 +61,8 @@ def record(ip, q, i):
 
     end = time.time()
     t = round(end - st, 3)
-    print(i + 1, 'prossed(' + str(ip) + '):', t, parts)
-
+    print(i + 1, 'prossed(' + str(ip) + '):', t, stat, parts)
+    print(statinfo)
     # if(flag):
     #     arr = [str(ip), stat, t, parts]
     # else:
@@ -144,6 +149,28 @@ newdf['datetime'] = datetime.now()
 print('insert------------------------------------------')
 print(newdf)
 newdf.to_sql(table, engine, if_exists='append', index=False)
+
+# # 播放語音檔案
+# def play_mp3(file_path):
+#     player = vlc.MediaPlayer(file_path)
+#     player.play()
+#     while player.is_playing():
+#         pass  # 等待音樂結束
+
+# play_mp3(r".\sound\CNC01stop.mp3")
+
+def play_mp3_with_mpg123(file_path):
+    # 確保 mpg123.exe 已在環境變數內，或指定完整路徑
+    mpg123_path = r"D:\mpg123-1.32.10-x86-64\mpg123.exe"
+    try:
+        # 執行 mpg123 播放音樂
+        subprocess.run([mpg123_path, file_path], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"播放失敗，錯誤：{e}")
+
+# 撥放音樂文件
+play_mp3_with_mpg123(r".\sound\CNC01stop.mp3")
+
 
 print('--------------------------------------------------------------------------------------------------------')
 print('已新增資料,共 ' + str(newdf.shape[0]) + '筆!')
