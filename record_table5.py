@@ -106,7 +106,7 @@ newdf.drop(['parts'], axis=1, inplace=True)
 table = "machines_rawdata"
 sql = "Select name,datetime,ip,status from " + table
 engine = sqla.create_engine(
-    'mysql+mysqlconnector://usr:usr@127.0.0.1:3306/mes',
+    'mysql+mysqlconnector://usr:usr@192.168.1.188:3306/mes',
     connect_args={"connect_timeout": 30})
 # print(engine)
 
