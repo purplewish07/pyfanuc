@@ -67,8 +67,8 @@ def record(ip, q, i):
 # end def------------------------------------------------------------
 allst = time.time()
 threads = []
-ip1 = '192.168.3.1'
-ip2 = '192.168.3.91'
+ip1 = '192.168.1.168'
+ip2 = '192.168.1.169'
 band = [4, 5, 24, 27, 28, 29, 36, 43, 44, 45, 46, 66, 67,
         70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89]
 stip = ipaddress.ip_address(ip1)
@@ -91,7 +91,7 @@ for i in range(n):
 ls = []
 for i in range(n):
     if not(i + 1 in band):
-        ls.append(['cnc' + str(i + 1).zfill(2), q[i][0], q[i][1], q[i][3]])
+        ls.append(['CNC' + str(i + 1).zfill(2), q[i][0], q[i][1], q[i][3]])
 newdf = pd.DataFrame(ls, columns=['name', 'ip', 'status', 'parts'])
 newdf['status'] = newdf['status'].apply(
     lambda x: pd.to_numeric(x, errors='coerce'))
@@ -103,21 +103,22 @@ newdf.drop(['parts'], axis=1, inplace=True)
 
 
 # database setting
-table = "test_tb4"
-sql = "Select name,date,ip,status from " + table
+table = "test"
+sql = "Select name,datetime,ip,status from " + table
 engine = sqla.create_engine(
-    'mysql+mysqlconnector://usr:usr@192.168.1.110:3306/test')
+    'mysql+mysqlconnector://usr:usr@localhost:3306/mes',
+    connect_args={"connect_timeout": 30})
 # print(engine)
 
 # compare status
 sql = "Select * from " + table
 predf = pd.read_sql_query(sql, engine)
-preid = predf[['ID', 'name']].groupby(['name']).max().reset_index()
+preid = predf[['id', 'name']].groupby(['name']).max().reset_index()
 preid.drop(['name'], axis=1, inplace=True)
 print(preid.shape[0])
 if preid.shape[0] != 0:
     predf = pd.merge(predf, preid, how='inner')
-    predf.drop(['ID', 'date', 'parts'], axis=1, inplace=True)
+    predf.drop(['id', 'datetime', 'parts'], axis=1, inplace=True)
     predf = predf.set_index(['name']).sort_index()
 
     print('pre------------------------------------------')
@@ -135,7 +136,7 @@ f.close()
 # 新增至資料庫
 newdf = newdf.reset_index()
 newdf = pd.merge(newdf, parts_df, left_on='name', right_on='name', how='inner')
-newdf['date'] = datetime.utcnow()
+newdf['datetime'] = datetime.now()
 print('insert------------------------------------------')
 print(newdf)
 newdf.to_sql(table, engine, if_exists='append', index=False)
