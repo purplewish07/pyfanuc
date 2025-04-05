@@ -171,20 +171,18 @@ newdf.to_sql(table, engine, if_exists='append', index=False)
 # # 撥放音樂文件
 # play_mp3_with_mpg123(r".\sound\CNC01stop.mp3")
 
-import subprocess
-
+#WSL
 def play_mp3(file_path):
     try:
-        # 執行 mpg123 命令來播放音樂
+        # 播放位於專案目錄中的 sound 資料夾內的 MP3 文件
         subprocess.run(["mpg123", file_path], check=True)
     except subprocess.CalledProcessError as e:
         print(f"播放失敗，錯誤：{e}")
     except FileNotFoundError:
-        print("請確保 mpg123 已安裝且正確配置！")
+        print("文件未找到或 mpg123 未安裝！")
 
-
-# # 撥放音樂文件
-play_mp3(r".\sound\CNC01stop.mp3")
+# 使用相對路徑，指向 sound 資料夾內的 MP3 文件
+play_mp3("./sound/CNC01stop.mp3")
 
 
 
