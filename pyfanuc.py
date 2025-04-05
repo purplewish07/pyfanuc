@@ -24,10 +24,10 @@ class pyfanuc(object):
 		# try:
 		print('cnning1')
 		self.sock=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		self.sock.settimeout(15)
+		self.sock.settimeout(5)
 		print('cnning2')
 		self.sock.connect((self.ip,self.port))
-		self.sock.settimeout(15)
+		self.sock.settimeout(5)
 		print('cnning3')
 		self.sock.sendall(self._encap(pyfanuc.FTYPE_OPN_REQU,pyfanuc.FRAME_DST))
 		print('cnning4')
