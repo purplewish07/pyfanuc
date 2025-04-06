@@ -1,3 +1,4 @@
 errlog
 __pychache__
 *.pyc
+.vs

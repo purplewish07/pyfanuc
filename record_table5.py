@@ -13,10 +13,45 @@ import threading
 import pandas as pd
 import sqlalchemy as sqla
 from datetime import datetime
+import platform
 import subprocess
 
-
+andon = 0
 errlog=[]
+
+# def play_mp3_with_mpg123(file_path):
+#     # 確保 mpg123.exe 已在環境變數內，或指定完整路徑
+#     mpg123_path = r"D:\mpg123-1.32.10-x86-64\mpg123.exe"
+#     try:
+#         # 執行 mpg123 播放音樂
+#         subprocess.run([mpg123_path, file_path], check=True)
+#     except subprocess.CalledProcessError as e:
+#         print(f"播放失敗，錯誤：{e}")
+# #WSL
+# def play_mp3(file_path):
+#     try:
+#         # 播放位於專案目錄中的 sound 資料夾內的 MP3 文件
+#         subprocess.run(["mpg123", file_path], check=True)
+#     except subprocess.CalledProcessError as e:
+#         print(f"播放失敗，錯誤：{e}")
+#     except FileNotFoundError:
+#         print("文件未找到或 mpg123 未安裝！")
+
+def play_mp3(file_path):
+    try:
+        if platform.system() == "Windows":
+            # Windows 系統，使用 mpg123.exe 的完整路徑
+            mpg123_path = r"D:\mpg123-1.32.10-x86-64\mpg123.exe"
+            subprocess.run([mpg123_path, "-r", "44100", file_path], check=True)
+        else:
+            # 非 Windows 系統 (假設為 WSL 或 Linux)
+            subprocess.run(["mpg123", "-r", "44100", file_path], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"播放失敗，錯誤：{e}")
+    except FileNotFoundError:
+        print("文件未找到或 mpg123 未安裝！")
+    
+
 
 def record(ip, q, i):
     st = time.time()
@@ -76,7 +111,7 @@ def record(ip, q, i):
 allst = time.time()
 threads = []
 ip1 = '192.168.1.168'
-ip2 = '192.168.1.170'
+ip2 = '192.168.1.169'
 band = [4, 5, 24, 27, 28, 29, 36, 43, 44, 45, 46, 66, 67,
         70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89]
 stip = ipaddress.ip_address(ip1)
@@ -109,6 +144,15 @@ parts_df = newdf[['name', 'parts']]
 newdf = newdf.set_index('name')
 newdf.drop(['parts'], axis=1, inplace=True)
 
+# 使用絕對路徑，指向 sound 資料夾內的 MP3 文件
+#play_mp3("/home/que/github_repo/pyfanuc/sound/CNC01stop.mp3")
+for name, row in newdf.iterrows():
+    if row['status'] != 3:
+        filename = fr".\sound\{name}已停機.mp3"
+        print(f"播放音樂檔案: {filename}")
+        play_mp3(filename)
+        andon +=0
+        time.sleep(5)
 
 # database setting
 # 172.26.160.1   win11-host for wsl
@@ -134,6 +178,9 @@ if preid.shape[0] != 0:
     print(predf)
     print('new------------------------------------------')
     print(newdf)
+
+    print("newdf columns:", newdf.columns)
+    print("newdf head:", newdf.head())
     newdf = newdf[predf.ne(newdf).any(axis=1)]
 
 # global errlog
@@ -149,48 +196,6 @@ newdf['datetime'] = datetime.now()
 print('insert------------------------------------------')
 print(newdf)
 newdf.to_sql(table, engine, if_exists='append', index=False)
-
-# # 播放語音檔案
-# def play_mp3(file_path):
-#     player = vlc.MediaPlayer(file_path)
-#     player.play()
-#     while player.is_playing():
-#         pass  # 等待音樂結束
-
-# play_mp3(r".\sound\CNC01stop.mp3")
-
-# def play_mp3_with_mpg123(file_path):
-#     # 確保 mpg123.exe 已在環境變數內，或指定完整路徑
-#     mpg123_path = r"D:\mpg123-1.32.10-x86-64\mpg123.exe"
-#     try:
-#         # 執行 mpg123 播放音樂
-#         subprocess.run([mpg123_path, file_path], check=True)
-#     except subprocess.CalledProcessError as e:
-#         print(f"播放失敗，錯誤：{e}")
-
-# # 撥放音樂文件
-# play_mp3_with_mpg123(r".\sound\CNC01stop.mp3")
-
-#WSL
-def play_mp3(file_path):
-    try:
-        # 播放位於專案目錄中的 sound 資料夾內的 MP3 文件
-        subprocess.run(["mpg123", file_path], check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"播放失敗，錯誤：{e}")
-    except FileNotFoundError:
-        print("文件未找到或 mpg123 未安裝！")
-
-# 使用絕對路徑，指向 sound 資料夾內的 MP3 文件
-#play_mp3("/home/que/github_repo/pyfanuc/sound/CNC01stop.mp3")
-
-for _, row in newdf.iterrows():
-    if row['status'] != 3:
-        # 根據 name 欄位生成 MP3 文件名
-        filename = f"/home/que/github_repo/pyfanuc/sound/{row['name']}已停機.mp3"
-        play_mp3(filename)
-
-
 
 print('--------------------------------------------------------------------------------------------------------')
 print('已新增資料,共 ' + str(newdf.shape[0]) + '筆!')
