@@ -191,21 +191,33 @@ print(realtimedf)
 realtimedf.to_sql(realtime_table, engine, if_exists='replace', index=True)
 
 # compare status
-sql = "Select * from " + table
-predf = pd.read_sql_query(sql, engine)
-preid = predf[['id', 'name']].groupby(['name']).max().reset_index()
-preid.drop(['name'], axis=1, inplace=True)
-print(preid.shape[0])
-if preid.shape[0] != 0:
-    predf = pd.merge(predf, preid, how='inner')
-    predf.drop(['id', 'datetime', 'parts'], axis=1, inplace=True)
-    predf = predf.set_index(['name']).sort_index()
+#sql = "Select * from " + table
+sql = """
+SELECT t1.*
+FROM machines_rawdata t1
+INNER JOIN (
+    SELECT name, MAX(datetime) AS max_datetime
+    FROM machines_rawdata
+    GROUP BY name
+) t2
+ON t1.name = t2.name AND t1.datetime = t2.max_datetime
+"""
 
-    print('pre------------------------------------------')
-    print(predf)
-    print('new------------------------------------------')
-    print(newdf)
-    newdf = newdf[predf.ne(newdf).any(axis=1)]
+# 確保 predf 的索引與 newdf 一致
+predf = pd.read_sql_query(sql, engine)
+predf = predf.set_index('name')
+
+# 比較 newdf 和 predf，僅保留有更新的資料
+updateddf = newdf[
+    (newdf['status'] != predf['status']) |  # 比較 status 是否不同
+    (
+        (newdf['parts'].notna() & predf['parts'].notna() & (newdf['parts'] != predf['parts'])) |  # 兩者都不為 NaN 且值不同
+        (newdf['parts'].isna() & predf['parts'].notna()) |  # newdf 為 NaN，predf 不為 NaN
+        (newdf['parts'].notna() & predf['parts'].isna())    # newdf 不為 NaN，predf 為 NaN
+    )
+]
+updateddf['datetime'] = datetime.now()
+#updateddf = updateddf[columns_order]
 
 # global errlog
 # f=open('errlog','a+')
@@ -213,17 +225,20 @@ if preid.shape[0] != 0:
 # for e in errlog:
 #     f.writelines(str(e)+'\n')
 # f.close()
-# 新增至資料庫
-newdf = newdf.reset_index()
-newdf = pd.merge(newdf, parts_df, left_on='name', right_on='name', how='inner')
-newdf['datetime'] = updatetime
-print('insert------------------------------------------')
-print(newdf)
-newdf.to_sql(table, engine, if_exists='append', index=False)
-
-print('--------------------------------------------------------------------------------------------------------')
-print('已新增資料,共 ' + str(newdf.shape[0]) + '筆!')
-print('--------------------------------------------------------------------------------------------------------')
+# 如果有更新的資料，插入資料庫
+if not updateddf.empty:
+    updateddf = updateddf.reset_index()  # 重置索引，確保 name 成為普通欄位
+    updateddf['datetime'] = datetime.now()  # 新增 datetime 欄位
+    print('insert------------------------------------------')
+    print(updateddf)
+    updateddf.to_sql(table, engine, if_exists='append', index=False)
+    print('--------------------------------------------------------------------------------------------------------')
+    print('已新增資料,共 ' + str(updateddf.shape[0]) + '筆!')
+    print('--------------------------------------------------------------------------------------------------------')
+else:
+    print('--------------------------------------------------------------------------------------------------------')
+    print('無資料更新!')
+    print('--------------------------------------------------------------------------------------------------------')
 alled = time.time()
 # 列印結果
 print("It cost %f sec" % (alled - allst))  # 會自動做近位
