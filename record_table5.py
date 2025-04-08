@@ -37,21 +37,25 @@ errlog=[]
 #     except FileNotFoundError:
 #         print("文件未找到或 mpg123 未安裝！")
 
-def play_mp3(file_path):
+def play_mp3(file_path, volume=0):
+    """
+    播放 MP3 文件，並調整音量。
+    :param file_path: MP3 文件的路徑
+    :param volume: 音量增益，範圍為 0 到 32768，預設為 32768 (100%)
+    """
     try:
         if platform.system() == "Windows":
             # Windows 系統，使用 mpg123.exe 的完整路徑
             mpg123_path = r"D:\mpg123-1.32.10-x86-64\mpg123.exe"
-            subprocess.run([mpg123_path, "-r", "44100", file_path], check=True)
+            subprocess.run([mpg123_path, "-f", str(volume), file_path], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
         else:
             # 非 Windows 系統 (假設為 WSL 或 Linux)
-            subprocess.run(["mpg123", "-r", "44100", file_path], check=True)
+            subprocess.run(["mpg123", "-f", str(volume), file_path], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
     except subprocess.CalledProcessError as e:
-        print(f"播放失敗，錯誤：{e}")
+        print(f"播放失敗，錯誤：{e.stderr.decode()}")
     except FileNotFoundError:
         print("文件未找到或 mpg123 未安裝！")
     
-
 
 def record(ip, q, i):
     st = time.time()
@@ -111,7 +115,7 @@ def record(ip, q, i):
 allst = time.time()
 threads = []
 ip1 = '192.168.1.168'
-ip2 = '192.168.1.169'
+ip2 = '192.168.1.170'
 band = [4, 5, 24, 27, 28, 29, 36, 43, 44, 45, 46, 66, 67,
         70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89]
 stip = ipaddress.ip_address(ip1)
@@ -142,26 +146,49 @@ newdf.dropna(subset=['status'], inplace=True)
 newdf['status'] = newdf['status'].apply(lambda x: 3 if x == 2 else x)
 parts_df = newdf[['name', 'parts']]
 newdf = newdf.set_index('name')
-newdf.drop(['parts'], axis=1, inplace=True)
+#newdf.drop(['parts'], axis=1, inplace=True)
 
 # 使用絕對路徑，指向 sound 資料夾內的 MP3 文件
 #play_mp3("/home/que/github_repo/pyfanuc/sound/CNC01stop.mp3")
 for name, row in newdf.iterrows():
-    if row['status'] != 3:
+     # 獲取當前時間
+    current_time = datetime.now().time()
+    
+
+    if row['status'] != 3 and row['status'] != 9:
+        # 播放音樂檔案
+        # 檢查是否在 12:00 至 13:00 之間
+        if current_time >= datetime.strptime("12:00", "%H:%M").time() and current_time < datetime.strptime("13:00", "%H:%M").time():
+            print(f"當前時間 {current_time} {name}已停機: 在 12:00~13:00 範圍內，跳過播放音效。")
+            continue
         filename = fr".\sound\{name}已停機.mp3"
         print(f"播放音樂檔案: {filename}")
         play_mp3(filename)
-        andon +=0
+        andon += 0
         time.sleep(5)
 
 # database setting
 # 172.26.160.1   win11-host for wsl
 table = "machines_rawdata"
-sql = "Select name,datetime,ip,status from " + table
+realtime_table = "machines_realtime"
 engine = sqla.create_engine(
-    'mysql+pymysql://usr:usr@192.168.1.118:3306/mes',
+    'mysql+pymysql://usr:usr@DESKTOP-8GND4HG:3306/mes',
     connect_args={"connect_timeout": 30})
 # print(engine)
+
+#update to db machines_realtime
+realtimedf = newdf.copy()
+realtimedf.reset_index(inplace=True)
+updatetime = datetime.now()
+realtimedf['datetime'] = updatetime
+# 調整欄位順序，將 'datetime' 放在 'name' 之前
+columns_order = ['datetime', 'name'] + [col for col in realtimedf.columns if col not in ['datetime', 'name']]
+realtimedf = realtimedf[columns_order]
+
+print("realtime_table")
+print(realtimedf)
+# 將資料儲存到 machines_realtime 表
+realtimedf.to_sql(realtime_table, engine, if_exists='replace', index=True)
 
 # compare status
 sql = "Select * from " + table
@@ -178,9 +205,6 @@ if preid.shape[0] != 0:
     print(predf)
     print('new------------------------------------------')
     print(newdf)
-
-    print("newdf columns:", newdf.columns)
-    print("newdf head:", newdf.head())
     newdf = newdf[predf.ne(newdf).any(axis=1)]
 
 # global errlog
@@ -192,7 +216,7 @@ if preid.shape[0] != 0:
 # 新增至資料庫
 newdf = newdf.reset_index()
 newdf = pd.merge(newdf, parts_df, left_on='name', right_on='name', how='inner')
-newdf['datetime'] = datetime.now()
+newdf['datetime'] = updatetime
 print('insert------------------------------------------')
 print(newdf)
 newdf.to_sql(table, engine, if_exists='append', index=False)
