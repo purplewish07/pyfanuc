@@ -37,7 +37,7 @@ errlog=[]
 #     except FileNotFoundError:
 #         print("文件未找到或 mpg123 未安裝！")
 
-def play_mp3(file_path, volume=32768):
+def play_mp3(file_path, volume=0): # volume=0~32768
     """
     播放 MP3 文件，並調整音量。
     :param file_path: MP3 文件的路徑
@@ -171,6 +171,7 @@ for name, row in newdf.iterrows():
 # 172.26.160.1   win11-host for wsl
 table = "machines_rawdata"
 realtime_table = "machines_realtime"
+futuretime_table = "machines_futuretime"
 engine = sqla.create_engine(
     'mysql+pymysql://usr:usr@DESKTOP-8GND4HG:3306/mes',
     connect_args={"connect_timeout": 30})
@@ -180,7 +181,7 @@ engine = sqla.create_engine(
 realtimedf = newdf.copy()
 realtimedf.reset_index(inplace=True)
 updatetime = datetime.now()
-realtimedf['datetime'] = updatetime
+realtimedf.loc[:,'datetime'] = updatetime
 # 調整欄位順序，將 'datetime' 放在 'name' 之前
 columns_order = ['datetime', 'name'] + [col for col in realtimedf.columns if col not in ['datetime', 'name']]
 realtimedf = realtimedf[columns_order]
@@ -216,19 +217,11 @@ updateddf = newdf[
         (newdf['parts'].notna() & predf['parts'].isna())    # newdf 不為 NaN，predf 為 NaN
     )
 ]
-updateddf['datetime'] = datetime.now()
-#updateddf = updateddf[columns_order]
 
-# global errlog
-# f=open('errlog','a+')
-# f.writelines(str(datetime.now())+'\n')
-# for e in errlog:
-#     f.writelines(str(e)+'\n')
-# f.close()
 # 如果有更新的資料，插入資料庫
 if not updateddf.empty:
     updateddf = updateddf.reset_index()  # 重置索引，確保 name 成為普通欄位
-    updateddf['datetime'] = datetime.now()  # 新增 datetime 欄位
+    updateddf.loc[:, 'datetime'] = updatetime  # 新增 datetime 欄位
     print('insert------------------------------------------')
     print(updateddf)
     updateddf.to_sql(table, engine, if_exists='append', index=False)
@@ -239,6 +232,18 @@ else:
     print('--------------------------------------------------------------------------------------------------------')
     print('無資料更新!')
     print('--------------------------------------------------------------------------------------------------------')
+
+futuretime = datetime.now()
+futuredf = predf.copy()
+futuredf.reset_index(inplace=True)
+futuredf.loc[:, 'datetime'] = futuretime  # 新增 datetime 欄位
+futuredf['status'] = 885
+#.to_sql(table, engine, if_exists='append', index=False)
+print("futuredf")
+print(futuredf)
+futuredf.to_sql(futuretime_table, engine, if_exists='replace', index=True)
+
+
 alled = time.time()
 # 列印結果
 print("It cost %f sec" % (alled - allst))  # 會自動做近位
