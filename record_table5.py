@@ -37,7 +37,7 @@ errlog=[]
 #     except FileNotFoundError:
 #         print("文件未找到或 mpg123 未安裝！")
 
-def play_mp3(file_path, volume=0):
+def play_mp3(file_path, volume=32768):
     """
     播放 MP3 文件，並調整音量。
     :param file_path: MP3 文件的路徑
@@ -115,7 +115,7 @@ def record(ip, q, i):
 allst = time.time()
 threads = []
 ip1 = '192.168.1.168'
-ip2 = '192.168.1.170'
+ip2 = '192.168.1.169'
 band = [4, 5, 24, 27, 28, 29, 36, 43, 44, 45, 46, 66, 67,
         70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89]
 stip = ipaddress.ip_address(ip1)
