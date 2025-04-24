@@ -17,6 +17,7 @@ import platform
 import subprocess
 
 andon = 0
+volume = 0 # 音量增益，範圍為 0 到 32768，預設為 32768 (100%)
 errlog=[]
 
 # def play_mp3_with_mpg123(file_path):
@@ -37,7 +38,8 @@ errlog=[]
 #     except FileNotFoundError:
 #         print("文件未找到或 mpg123 未安裝！")
 
-def play_mp3(file_path, volume=0): # volume=0~32768
+def play_mp3(file_path): # volume=0~32768
+    global volume
     """
     播放 MP3 文件，並調整音量。
     :param file_path: MP3 文件的路徑
