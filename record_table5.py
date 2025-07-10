@@ -17,7 +17,7 @@ import platform
 import subprocess
 
 andon = 0
-volume = 0 # 音量增益，範圍為 0 到 32768，預設為 32768 (100%)
+volume = 13107 # 音量增益，範圍為 0 到 32768，預設為 32768 (100%)
 errlog=[]
 
 # def play_mp3_with_mpg123(file_path):
@@ -38,7 +38,7 @@ errlog=[]
 #     except FileNotFoundError:
 #         print("文件未找到或 mpg123 未安裝！")
 
-def play_mp3(file_path): # volume=0~32768
+def play_mp3(file_path, timeout=10): # volume=0~32768
     global volume
     """
     播放 MP3 文件，並調整音量。
@@ -49,10 +49,15 @@ def play_mp3(file_path): # volume=0~32768
         if platform.system() == "Windows":
             # Windows 系統，使用 mpg123.exe 的完整路徑
             mpg123_path = r"D:\mpg123-1.32.10-x86-64\mpg123.exe"
-            subprocess.run([mpg123_path, "-f", str(volume), file_path], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+            subprocess.run([mpg123_path, "-f", str(volume), file_path],
+                          check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=timeout)
         else:
             # 非 Windows 系統 (假設為 WSL 或 Linux)
-            subprocess.run(["mpg123", "-f", str(volume), file_path], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+            subprocess.run(["mpg123", "-f", str(volume), file_path],
+                          check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=timeout)
+    
+    except subprocess.TimeoutExpired:
+        print(f"播放超時，自動跳過: {file_path}")
     except subprocess.CalledProcessError as e:
         print(f"播放失敗，錯誤：{e.stderr.decode()}")
     except FileNotFoundError:
@@ -67,9 +72,20 @@ def record(ip, q, i):
     try:
         conn = pyfanuc(str(ip))
         if conn.connect():
-            stat = conn.statinfo['run']
+            #stat = conn.statinfo['run']
             statinfo = conn.statinfo
             # print(ip,'|type:' + conn.sysinfo['cnctype'].decode() + 'i','|run_status: ' ,stat)
+            y= conn.readpmc(0, 2, 27, 3)
+            #print(y)
+            # 檢測燈光狀態
+            if (y.get(29) & 1):  # 綠燈
+                stat = 3
+            elif (y.get(27) & 8):  # 黃燈
+                stat = 1
+            elif (y.get(27) & 4):  # 紅燈
+                stat = 4
+            else:
+                stat = 0  # 沒有燈光
             parts = conn.readmacro(3901).get(3901)
             flag = True
         else:

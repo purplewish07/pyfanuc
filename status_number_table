@@ -1,0 +1,20 @@
+run
+0 (無燈)
+1 (黃燈)
+2 (黃燈) 閒置?
+3 自動運轉(綠燈)
+9 未開機(不須異警)
+
+
+'run': 0, 'motion': 0 | reset , 無燈
+
+{'aut': 1, 'run': 2, 'motion': 0, 'mstb': 1, 'emegency': 0, 'alarm': 0, 'edit': 0}
+sleep 2 sec
+1 prossed(192.168.1.168): 2.142 1 3748.0
+{'aut': 4, 'run': 1, 'motion': 0, 'mstb': 0, 'emegency': 0, 'alarm': 0, 'edit': 0}
+{'aut': 1, 'run': 2, 'motion': 0, 'mstb': 1, 'emegency': 0, 'alarm': 0, 'edit': 0}
+
+#3~2檢查機台轉黃燈多久後才能偵測
+#2~0
+
+{'aut': 1, 'run': 0, 'motion': 0, 'mstb': 0, 'emegency': 0, 'alarm': 0, 'edit': 0}發現有亮燈的情形
