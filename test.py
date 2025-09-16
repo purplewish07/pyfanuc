@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from pyfanuc import pyfanuc
 
-conn = pyfanuc('192.168.1.169')
+conn = pyfanuc('192.168.1.168')
 if conn.connect():
     parts = conn.readmacro(3901)
     #cycle = conn.readparam(-1 , 1240,1250)

@@ -71,8 +71,9 @@ class pyfanuc(object):
 			print(e)
 
 		finally:
-			time.sleep(2)
-			print('sleep 2 sec')
+			# time.sleep(2)
+			# print('sleep 2 sec')
+			pass
 		return False
 
 	def _show_requsts(self,cap):
@@ -686,6 +687,64 @@ class pyfanuc(object):
 				else:
 					return -1
 		return -1
+	
+	def getproghead(self,name,chars=256):
+		"""
+		Get the head (first N chars) of a program file from the controller, limiting the received data length.
+		:param name: program name or number
+		:param chars: number of characters to read from the head
+		:return: string containing the head of the program
+		"""
+		q = b''
+		if isinstance(name, int):
+			q = ("O%04i-O%04i" % (name, name)).encode()
+		elif isinstance(name, str):
+			name = name.upper()
+			if not name.startswith("O"):
+				name = "O" + name
+			if name.find("-") == -1:
+				name = name + "-" + name
+			q = name.encode()
+		else:
+			return -1
+		buffer = bytearray(0x204)
+		self.sock2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.sock2.connect((self.ip, self.port))
+		self.sock2.settimeout(1)
+		self.sock2.sendall(self._encap(pyfanuc.FTYPE_OPN_REQU, pyfanuc.FRAME_DST2))
+		data = self._decap(self.sock2.recv(1500))
+		buffer[0:4] = b'\x00\x00\x00\x01'
+		buffer[4:4 + len(q)] = q
+		self.sock2.sendall(self._encap(0x1501, buffer))
+		data = self._decap(self.sock2.recv(1500))
+		f = b''
+		n = b''
+		while len(f) < chars:
+			n += self.sock2.recv(1500)
+			while len(n) >= 10:
+				if n[:4] == pyfanuc.FRAMEHEAD:
+					fvers, ftype, flen = unpack(">HHH", n[4:10])
+					if len(n) < flen:
+						break
+					n = n[10:]
+					if ftype == 0x1604:
+						chunk = n[:flen]
+						need = chars - len(f)
+						f += chunk[:need]
+						n = n[flen:]
+						if len(f) >= chars:
+							self.sock2.close()
+							return f[:chars].decode(errors='ignore')
+					elif ftype == 0x1701:
+						self.sock2.sendall(self._encap(0x1702, b''))
+						self.sock2.close()
+						return f[:chars].decode(errors='ignore')
+				else:
+					self.sock2.close()
+					return -1
+		self.sock2.close()
+		return f[:chars].decode(errors='ignore')
+	
 	def readactfeed(self):
 		"""
 		Get actual feedrate
@@ -699,6 +758,15 @@ class pyfanuc(object):
 		returns spindlespeed
 		"""
 		st=self._req_rdsingle(1,1,0x25)
+		return self._decode8(st['data']) if st['len']==8 else None
+	
+	#01,01,40 Read act SpindleSpeed/-Load (acts2)
+	def readactspindleload(self):
+		"""
+		Get actual spindleload
+		returns spindleload in percent
+		"""
+		st=self._req_rdsingle(1,1,0x40)
 		return self._decode8(st['data']) if st['len']==8 else None
 
 # D1870 remain-wirelength in m
