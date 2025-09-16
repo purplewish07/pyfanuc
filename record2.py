@@ -1,12 +1,37 @@
 #!/usr/bin/env python3
 from pyfanuc import pyfanuc
 import time
-ip = '192.168.1.168'
+ip = '192.168.1.169'
 conn = pyfanuc(ip)
 st = time.time()
 i = 0
 stat=9
 statinfo = None
+def get_tool_list(data_list):
+    """
+    找到開頭為'N1 '但不是'(N1 '的項目，並回傳在它之前的所有項目
+    """
+    for i, item in enumerate(data_list):
+        # 檢查是否以'N1 '開頭但不以'(N1 '開頭
+        if item.startswith('N1 ') and not item.startswith('(N1 '):
+            result = data_list[2:i]  # 回傳在該項目之前的所有項目
+            
+            # 處理結果：移除包含'T-'的項目並格式化
+            formatted_result = []
+            for line in result:
+                # 檢查是否包含'T-'，如果包含則跳過
+                if 'T-' not in line:
+                    # 分割並取[1:2]（即取第二個元素）
+                    info = line.split('   ')
+                    if len(info) > 1:
+                        formatted_result.extend([info[1:3]])
+
+            # 根據第一個元素（工具編號）排序
+            return sorted(formatted_result, key=lambda x: int(x[0][1:]))  # 排序時忽略'T'字元
+
+    # 如果沒找到符合條件的項目，回傳整個列表
+    return []
+
 try:
     conn = pyfanuc(str(ip))
     if conn.connect():
@@ -15,15 +40,57 @@ try:
         statinfo = conn.statinfo
         # print(ip,'|type:' + conn.sysinfo['cnctype'].decode() + 'i','|run_status: ' ,stat)
         # if stat ==0:
-        # parts = conn.readmacro(3901)
+        parts = conn.readmacro(3901)
+        total = conn.readmacro(12399)
+        ng = conn.readmacro(12400)
+        print(parts)
+        print(total)
+        print(ng)
+        # ct = conn.readmacro(6757,6758)
+        ct = conn.readparam2(-1, 6757, 6758)
+        # 將ct轉換為HH:MM:SS格式
+        if ct and 6757 in ct and 6758 in ct:
+            seconds = int(ct[6757]['data'][0]//1000)  # 累計秒數
+            minutes = int(ct[6758]['data'][0])  # 累計分鐘數
+            
+            # 計算總時間
+            total_seconds = seconds + (minutes * 60)
+            
+            hours = total_seconds // 3600
+            remaining_minutes = (total_seconds % 3600) // 60
+            remaining_seconds = total_seconds % 60
+            
+            ct_formatted = f"{hours:02d}:{remaining_minutes:02d}:{remaining_seconds:02d}"
+            print(f"CT: {ct_formatted}")
+        else:
+            print("CT: 無資料")
+        print(ct)
+        # 將ct轉換為HH:MM:SS格式
+        # if ct and 6757 in ct and 6758 in ct:
+        #     seconds = ct[6757]
+        #     hours = int(seconds / 3600)
+        #     minutes = int((seconds % 3600) / 60)
+        #     seconds = int(seconds % 60)
+        #     ct_formatted = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+        #     print(f"CT: {ct_formatted}")
+        # else:
+        #     print("CT: 無資料")
         # cycle = conn.readparam2(-1, 1861,1869)
         # cycle = conn.readparam2(0, 6711)
         # cycle = conn.readparam2(-1 , 6700,6750)
-        #cycle = conn.readdiag(-1,4920)
+        # cycle = conn.readdiag(-1,4920)
         # cycle = conn.readparam2(-1 , 5312)
         # n = conn.readpmc(2, 9, 99, 2)  # OK
 
-        # print(parts)
+
+        # spindle_speed = conn.readactspindlespeed()
+        # print(spindle_speed)
+        # spindle_load = conn.readactspindleload()
+        # print(spindle_load)
+        # position = conn.readaxes()
+        # print(position)
+
+        
         # print(parts.get(3901))
         # print(cycle)
         # print(n)
@@ -55,8 +122,25 @@ try:
         print(f"燈光狀態: {stat}")
 
 
-        alarm = conn.readalarmcode(2,0)
-        print(alarm)
+        # alarm = conn.readalarmcode(2,0)
+        # print(alarm)
+        #| readexecprog	| execute linecode |
+        #| readprognum | actual main/run program |
+        print(conn.readexecprog(1000)) #當前執行code
+        #print(conn.readexecprog(100)['text'].split('\n')[0])
+        print(conn.readprognum())
+        exec_prog_num = conn.readprognum()['main']
+        # 將數字轉成文字並前置填0湊滿4字元
+        exec_prog_str = "O" + str(exec_prog_num).zfill(4)
+        #print(exec_prog_str)
+        #print(conn.readprogname())
+        file = conn.getproghead(exec_prog_str,3500).split('\n') #程式內容
+        dwgno = file[1].replace(exec_prog_str,'').strip('() ')
+        tool_list = get_tool_list(file)
+        print(dwgno)
+        for tool in tool_list:
+            print(tool)
+
         flag = True
     else:
         # conn.disconnect()
