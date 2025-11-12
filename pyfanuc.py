@@ -489,14 +489,54 @@ class pyfanuc(object):
 
 	def readmacro(self,first,last=0):
 		if last==0: last=first
-		st=self._req_rdsingle(1,1,0x15,first,last)
-		if st["len"]<=0:
-			return
-		r={}
-		for pos in range(0,st["len"],8):
-			r[first]=self._decode8(st["data"][pos:pos+8])
-			first+=1
-		return r
+
+		if first==last:
+			st=self._req_rdsingle(1,1,0x15,first,last)
+			print('st:',st)
+			if st["len"]<=0:
+				return
+			# 單一查詢的結果處理
+			result={}
+			result[first] = self._decode8(st["data"][0:8])
+			return result
+		else:
+			r=[]
+			macro_nums = list(range(first, last + 1))
+			# 為每個 macro 建立子請求
+			for macro_num in macro_nums:
+				r.append(self._req_rdsub(1, 1, 0x15, macro_num, macro_num))
+			
+			# 發送多重請求
+			st = self._req_rdmulti(r)
+			print('multi st:', st)
+
+			result = {}
+			for x in st["data"]:
+				if x[0] != 0:  # 有錯誤
+					print(f"Error reading macro {first}: error code {x[0]}")
+					result[first] = None
+				else:
+					# 參考 readaxes 的處理方式
+					# x[1] 是資料部分，格式類似 readaxes 中的處理
+					data_length = unpack(">H", x[1][0:2])[0]
+					
+					# 處理資料，從位置 2 開始，每 8 bytes 一個值
+					for pos in range(2, data_length + 2, 8):
+						if pos + 8 <= len(x[1]):
+							value = x[1][pos:pos+8]
+							result[first] = self._decode8(value)
+							break  # 每個 macro 只有一個值
+						else:
+							result[first] = None
+							break
+				first += 1
+			return result
+		# result={}
+		# for pos in range(0,st["len"],8):
+		# 	result[first]=self._decode8(st["data"][pos:pos+8])
+		# 	first+=1
+		# return result
+
 	def readpmc(self,datatype,section,first,count=1):
 		last=first+(1<<datatype)*count-1
 		st=self._req_rdsingle(2,1,0x8001,first,last,section,datatype)
