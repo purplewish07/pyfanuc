@@ -492,7 +492,7 @@ class pyfanuc(object):
 
 		if first==last:
 			st=self._req_rdsingle(1,1,0x15,first,last)
-			print('st:',st)
+			# print('st:',st)
 			if st["len"]<=0:
 				return
 			# 單一查詢的結果處理
@@ -508,7 +508,7 @@ class pyfanuc(object):
 			
 			# 發送多重請求
 			st = self._req_rdmulti(r)
-			print('multi st:', st)
+			# print('multi st:', st)
 
 			result = {}
 			for x in st["data"]:
