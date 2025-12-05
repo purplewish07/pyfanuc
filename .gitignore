@@ -2,3 +2,4 @@ errlog
 __pychache__
 *.pyc
 .vs
+winloop_error.log
