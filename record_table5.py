@@ -66,20 +66,24 @@ def play_mp3(file_path, timeout=10): # volume=0~32768
 
 def record(ip, q, i):
     st = time.time()
-    stat=9
+    stat = 9
     parts = None
     statinfo = None
     prog = None
     dwgno = None
     total = None
     ng = None
-    tool_list = None
-    ct=None
+    tool_list = []
+    ct = None
+    flag = False
 
     def get_tool_list(data_list):
         """
         找到開頭為'N1 '但不是'(N1 '的項目，並回傳在它之前的所有項目
         """
+        if not isinstance(data_list, list):
+            return []
+            
         for i, item in enumerate(data_list):
             # 檢查是否以'N1 '開頭但不以'(N1 '開頭
             if item.startswith('N1 ') and not item.startswith('(N1 '):
@@ -96,39 +100,41 @@ def record(ip, q, i):
                             formatted_result.extend([info[1:3]])
 
                 # 根據第一個元素（工具編號）排序
-                return sorted(formatted_result, key=lambda x: int(x[0][1:]))  # 排序時忽略'T'字元
+                try:
+                    return sorted(formatted_result, key=lambda x: int(x[0][1:]))  # 排序時忽略'T'字元
+                except (IndexError, ValueError):
+                    return formatted_result
 
-        # 如果沒找到符合條件的項目，回傳整個列表
+        # 如果沒找到符合條件的項目，回傳空列表
         return []
     
-    
-
     def get_ct_formatted(ct):
         # 將ct轉換為HH:MM:SS格式
         if ct and 6757 in ct and 6758 in ct:
-            seconds = int(ct[6757]['data'][0]//1000)  # 累計秒數
-            minutes = int(ct[6758]['data'][0])  # 累計分鐘數
-            
-            # 計算總時間
-            total_seconds = seconds + (minutes * 60)
-            
-            hours = total_seconds // 3600
-            remaining_minutes = (total_seconds % 3600) // 60
-            remaining_seconds = total_seconds % 60
-            
-            ct_formatted = f"{hours:02d}:{remaining_minutes:02d}:{remaining_seconds:02d}"
-            return ct_formatted
+            try:
+                seconds = int(ct[6757]['data'][0]//1000)  # 累計秒數
+                minutes = int(ct[6758]['data'][0])  # 累計分鐘數
+                
+                # 計算總時間
+                total_seconds = seconds + (minutes * 60)
+                
+                hours = total_seconds // 3600
+                remaining_minutes = (total_seconds % 3600) // 60
+                remaining_seconds = total_seconds % 60
+                
+                ct_formatted = f"{hours:02d}:{remaining_minutes:02d}:{remaining_seconds:02d}"
+                return ct_formatted
+            except (KeyError, TypeError, ValueError):
+                return None
         else:
             return None
 
     try:
         conn = pyfanuc(str(ip))
         if conn.connect():
-            #stat = conn.statinfo['run']
             statinfo = conn.statinfo
-            # print(ip,'|type:' + conn.sysinfo['cnctype'].decode() + 'i','|run_status: ' ,stat)
-            y= conn.readpmc(0, 2, 27, 3)
-            #print(y)
+            y = conn.readpmc(0, 2, 27, 3)
+            
             # 檢測燈光狀態
             if (y.get(29) & 1):  # 綠燈
                 stat = 3
@@ -138,17 +144,34 @@ def record(ip, q, i):
                 stat = 4
             else:
                 stat = 0  # 沒有燈光
+            
             parts = conn.readmacro(3901).get(3901)
             total_raw = conn.readmacro(12399).get(12399)
             ng_raw = conn.readmacro(12400).get(12400)
             total = int(total_raw) if total_raw is not None else None
             ng = int(ng_raw) if ng_raw is not None else None
             ct = get_ct_formatted(conn.readparam2(-1, 6757, 6758))
+            
             # 將數字轉成文字並前置填0湊滿4字元
             prog = "O" + str(conn.readprognum()['main']).zfill(4)
-            file = conn.getproghead(prog,3500).split('\n') #程式內容
-            dwgno = file[1].replace(prog,'').strip('() ') if len(file) > 1 else "unknown"
-            tool_list = get_tool_list(file)
+            
+            # 修正: 檢查 getproghead 的返回值類型
+            try:
+                prog_head = conn.getproghead(prog, 3500)
+                if isinstance(prog_head, str):
+                    file = prog_head.split('\n')  # 程式內容
+                    dwgno = file[1].replace(prog, '').strip('() ') if len(file) > 1 else "unknown"
+                    tool_list = get_tool_list(file)
+                else:
+                    # 如果返回的不是字串（可能是錯誤碼），使用預設值
+                    print(f"警告: getproghead 返回非字串值: {prog_head}")
+                    dwgno = "unknown"
+                    tool_list = []
+            except Exception as e:
+                print(f"警告: 讀取程式內容失敗 {ip}: {e}")
+                dwgno = "unknown"
+                tool_list = []
+            
             flag = True
         else:
             conn.disconnect()
@@ -174,19 +197,31 @@ def record(ip, q, i):
             print('(' + str(ip) + ')' + log)
             errlog.append(['(' + str(ip) + ')' + log])
             log = 999
+    except Exception as e:
+        # 捕獲所有其他異常
+        flag = False
+        log = f"Unexpected error: {e}"
+        print('(' + str(ip) + ')' + log)
+        errlog.append(['(' + str(ip) + ')' + log])
 
     finally:
-        conn.disconnect()
+        try:
+            conn.disconnect()
+        except:
+            pass
 
     end = time.time()
     t = round(end - st, 3)
-    print(i + 1, 'prossed(' + str(ip) + '):', t, stat, parts)
+    print(i + 1, 'processed(' + str(ip) + '):', t, stat, parts)
     print(statinfo)
-    # if(flag):
-    #     arr = [str(ip), stat, t, parts]
-    # else:
-    #     arr = [str(ip), log, t, parts]
-    arr= [str(ip), stat, t, parts, prog, dwgno, total, ng, ct, tool_list]
+    
+    # 修正: 確保 q[i] 總是有完整的資料結構，即使發生錯誤
+    if flag:
+        arr = [str(ip), stat, t, parts, prog, dwgno, total, ng, ct, tool_list]
+    else:
+        # 發生錯誤時，填入預設值以保持資料結構完整
+        arr = [str(ip), stat, t, None, None, None, None, None, None, []]
+
     q[i] = arr
     
 
@@ -230,25 +265,6 @@ parts_df = newdf[['name', 'parts']]
 newdf = newdf.set_index('name')
 #newdf.drop(['parts'], axis=1, inplace=True)
 
-# 使用絕對路徑，指向 sound 資料夾內的 MP3 文件
-#play_mp3("/home/que/github_repo/pyfanuc/sound/CNC01stop.mp3")
-for name, row in newdf.iterrows():
-     # 獲取當前時間
-    current_time = datetime.now().time()
-    
-
-    if row['status'] != 3 and row['status'] != 9:
-        # 播放音樂檔案
-        # 檢查是否在 12:00 至 13:00 之間
-        if current_time >= datetime.strptime("12:00", "%H:%M").time() and current_time < datetime.strptime("13:00", "%H:%M").time():
-            print(f"當前時間 {current_time} {name}已停機: 在 12:00~13:00 範圍內，跳過播放音效。")
-            continue
-        filename = fr".\sound\{name}已停機.mp3"
-        print(f"播放音樂檔案: {filename}")
-        play_mp3(filename)
-        andon += 0
-        time.sleep(5)
-
 # database setting
 # 172.26.160.1   win11-host for wsl
 table = "machines_rawdata"
@@ -258,6 +274,38 @@ engine = sqla.create_engine(
     'mysql+pymysql://usr:usr@DESKTOP-8GND4HG:3306/mes',
     connect_args={"connect_timeout": 30})
 # print(engine)
+
+# 讀取安燈啟用設定
+try:
+    andon_config = pd.read_sql_query("SELECT machine_name, andon_enabled FROM machines_andon WHERE andon_enabled = 1", engine)
+    andon_enabled_machines = set(andon_config['machine_name'].tolist())
+    print(f"已啟用安燈的機台: {andon_enabled_machines}")
+except Exception as e:
+    print(f"讀取安燈設定失敗: {e}, 預設全部啟用")
+    andon_enabled_machines = None
+
+# 檢查機台狀態並播放音效
+for name, row in newdf.iterrows():
+    if row['status'] != 3 and row['status'] != 9:
+        # 檢查該機台是否啟用安燈
+        if andon_enabled_machines is not None and name not in andon_enabled_machines:
+            print(f"{name} 安燈已停用，跳過播放音效")
+            continue
+        
+        # 獲取當前時間
+        current_time = datetime.now().time()
+        
+        # 檢查是否在 12:00 至 13:00 之間（午休時段）
+        if current_time >= datetime.strptime("12:00", "%H:%M").time() and current_time < datetime.strptime("13:00", "%H:%M").time():
+            print(f"當前時間 {current_time} {name}已停機: 在 12:00~13:00 範圍內，跳過播放音效。")
+            continue
+        
+        # 播放音樂檔案
+        filename = fr".\sound\{name}已停機.mp3"
+        print(f"播放音樂檔案: {filename}")
+        play_mp3(filename)
+        andon += 0
+        time.sleep(5)
 
 #update to db machines_realtime
 realtimedf = newdf.copy()
