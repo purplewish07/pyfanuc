@@ -265,7 +265,22 @@ parts_df = newdf[['name', 'parts']]
 newdf = newdf.set_index('name')
 #newdf.drop(['parts'], axis=1, inplace=True)
 
-# database setting
+# 讀取安燈啟用設定 (使用 mes_center 資料庫)
+andon_engine = sqla.create_engine(
+    'mysql+pymysql://usr:usr@DESKTOP-8GND4HG:3306/mes_center',
+    connect_args={"connect_timeout": 30})
+
+try:
+    andon_config = pd.read_sql_query("SELECT machine_name, andon_enabled FROM machines_andon WHERE andon_enabled = 1", andon_engine)
+    andon_enabled_machines = set(andon_config['machine_name'].tolist())
+    print(f"已啟用安燈的機台: {andon_enabled_machines}")
+except Exception as e:
+    print(f"讀取安燈設定失敗: {e}, 預設全部啟用")
+    andon_enabled_machines = None
+finally:
+    andon_engine.dispose()
+
+# database setting (使用 mes 資料庫進行機台資料存取)
 # 172.26.160.1   win11-host for wsl
 table = "machines_rawdata"
 realtime_table = "machines_realtime"
@@ -274,15 +289,6 @@ engine = sqla.create_engine(
     'mysql+pymysql://usr:usr@DESKTOP-8GND4HG:3306/mes',
     connect_args={"connect_timeout": 30})
 # print(engine)
-
-# 讀取安燈啟用設定
-try:
-    andon_config = pd.read_sql_query("SELECT machine_name, andon_enabled FROM machines_andon WHERE andon_enabled = 1", engine)
-    andon_enabled_machines = set(andon_config['machine_name'].tolist())
-    print(f"已啟用安燈的機台: {andon_enabled_machines}")
-except Exception as e:
-    print(f"讀取安燈設定失敗: {e}, 預設全部啟用")
-    andon_enabled_machines = None
 
 # 檢查機台狀態並播放音效
 for name, row in newdf.iterrows():
