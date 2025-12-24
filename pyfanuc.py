@@ -728,6 +728,113 @@ class pyfanuc(object):
 					return -1
 		return -1
 	
+	#added uploadprog function 2025-12-19
+	def uploadprog(self, fullpath, content):
+		"""
+		Upload program-file to CNC (File I/O mode)
+		fullpath: FULL PATH of folder only, e.g. "//MEMCARD/" or "//CNC_MEM/USER/PATH1/"
+				(Do NOT include filename here)
+		content: program text including Oxxxx
+		"""
+
+		# --- 1. FULL PATH 自動補 N: ---
+		if not fullpath.startswith("//"):
+			raise Exception(f"FULL PATH must start with '//', got: {fullpath}")
+
+		folder = "N:" + fullpath              # e.g. N://MEMCARD/
+		folder_bytes = folder.encode()
+
+		# --- 2. 建立 socket ---
+		self.sock2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.sock2.connect((self.ip, self.port))
+		self.sock2.settimeout(1)
+
+		# --- 3. Open Request ---
+		self.sock2.sendall(self._encap(pyfanuc.FTYPE_OPN_REQU, pyfanuc.FRAME_DST2))
+		data = self._decap(self.sock2.recv(1500))
+
+		# --- 4. Write Program Request (0x1101) ---
+		buffer = bytearray(0x204)
+		buffer[0:4] = b'\x00\x00\x00\x01'
+		buffer[4:4+len(folder_bytes)] = folder_bytes
+
+		self.sock2.sendall(self._encap(0x1101, buffer))
+		data = self._decap(self.sock2.recv(1500))
+
+		# # --- CNC 回應錯誤 (1103) ---
+		# if not data:
+		# 	raise Exception("CNC did not respond to 1101 (Write Request).")
+
+		# if data[1] == 0x1103:
+		# 	err = data[3:]
+		# 	raise Exception(f"CNC Error 1103 (Write Request Failed): {err}")
+
+		# --- 5. 分段送程式內容 (0x1204) ---
+		block = content.encode()
+		pos = 0
+		MAXLEN = 0xF0
+
+		while pos < len(block):
+			chunk = block[pos:pos+MAXLEN]
+			pos += MAXLEN
+			self.sock2.sendall(self._encap(0x1204, chunk))
+
+		# --- 6. Write End (0x1301) ---
+		self.sock2.sendall(self._encap(0x1301, b''))
+
+		# --- 7. CNC 回應 (1302 or 1404) ---
+		data = self._decap(self.sock2.recv(1500))
+
+		if not data:
+			raise Exception("CNC did not respond after 1301 (Write End).")
+
+		print('data after 1301:', data)
+		ftype = data["ftype"]
+
+		# 成功
+		if ftype == 0x1302:
+			return True
+
+		# 錯誤：1404
+		if ftype == 0x1404:
+			raw = data["data"]
+			error_code = int.from_bytes(raw[0:2], "big")
+			subcode    = int.from_bytes(raw[2:4], "big")
+			detail     = int.from_bytes(raw[4:6], "big")
+
+			if error_code == 0x2006 and subcode == 0x0005 and detail == 0x0004:
+				raise Exception("CNC Error 1404: File already exists and cannot be overwritten.")
+
+			raise Exception(
+				f"CNC Error 1404: Write failed "
+				f"(code={hex(error_code)}, sub={hex(subcode)}, detail={hex(detail)})"
+			)
+
+		# --- 未知回應 ---
+		raise Exception(f"Unexpected CNC response: {data}")
+	
+	def deleteprog(self, fullpath):
+		if not fullpath.startswith("//"):
+			raise Exception("FULL PATH must start with '//'")
+
+		# FANUC 要求 N: prefix + NULL 結尾
+		buffer=bytearray(0x100)
+		bdir=fullpath.encode()
+		buffer[0:len(bdir)]=bdir
+		# 呼叫 delete opcode = 0xb6
+		st = self._req_rdsingle(1,1,0xb6,0,0,0,0,256,buffer)
+
+		# 成功
+		if st["len"] >= 0:
+			return True
+
+		# CNC 回 error
+		if "error" in st:
+			raise Exception(f"Delete failed, error={st['error']}")
+
+		raise Exception("Delete failed (unknown error)")
+
+
 	def getproghead(self,name,chars=256):
 		"""
 		Get the head (first N chars) of a program file from the controller, limiting the received data length.

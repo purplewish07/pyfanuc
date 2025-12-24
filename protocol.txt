@@ -39,6 +39,7 @@
 01,01,b0 read current directory (FULLNAME i31)
 01,01,b3 read directory entrys  (FULLNAME i31)
 01,01,b4 read directory entry count  (FULLNAME i31)
+01,01,b6 delete file
 01,01,b9 read main program name  (FULLNAME i31)
 
 02,01,8001 read PMC
