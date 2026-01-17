@@ -1,4 +1,11 @@
-[Python pyfanuc 原始庫](https://github.com/c-logic/pyfanuc)
+## 致謝 (Credits)
+
+本專案基於 [c-logic](https://github.com/c-logic) 的原始協議分析工作。
+
+**原始作者**: [c-logic/pyfanuc](https://github.com/c-logic/pyfanuc)  
+**維護與擴充**: [purplewish07](https://github.com/purplewish07)
+
+感謝 c-logic 對 FANUC FOCAS 協議的深入分析與貢獻。
 
 # pyfanuc
 focas fanuc protocol-analysis to python-source
