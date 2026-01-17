@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>CsFanuc</RootNamespace>
+    <AssemblyName>CsFanuc</AssemblyName>
+    <Version>1.0.0</Version>
+    <Authors>Que</Authors>
+    <Description>FANUC CNC 通訊庫 - C# 版本 (pyfanuc 轉換)</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" />
+  </ItemGroup>
+
+</Project>

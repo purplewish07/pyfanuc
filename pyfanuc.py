@@ -223,10 +223,12 @@ class pyfanuc(object):
 				payload=pack(">H",len(pre))+b''.join(pre)
 			else:
 				payload=pack(">HH",1,len(payload)+2)+payload
+		# print('encap payload:',payload.hex())
 		# print(pyfanuc.FRAMEHEAD.hex()+pack(">HHH",fvers,ftype,len(payload)).hex()+payload.hex())
 		# self._show_requsts(pyfanuc.FRAMEHEAD.hex()+pack(">HHH",fvers,ftype,len(payload)).hex()+payload.hex())
 		return pyfanuc.FRAMEHEAD+pack(">HHH",fvers,ftype,len(payload))+payload
 	def _decap(self,data):
+		# print('decap data:',data.hex())
 		# self._show_response(data.hex())
 		"intern function - Decapsulate packetdata"
 		if len(data)<10:
@@ -344,6 +346,7 @@ class pyfanuc(object):
 		returns ['addinfo','maxaxis','cnctype','mttype','series','version','axes']
 		"""
 		st=self._req_rdsingle(1,1,0x18)
+		# print('st sysinfo:',st)
 		if st["len"]==0x12:
 			self.sysinfo=dict(zip(['addinfo','maxaxis','cnctype','mttype','series','version','axes'],
 			unpack(">HH2s2s4s4s2s",st["data"])))
@@ -646,20 +649,26 @@ class pyfanuc(object):
 		if st["len"]>=8:
 			return dict(zip(['dirs','files'],unpack(">ii",st["data"])))
 		return None
-	def readdir(self,dir,first=0,count=10,type=0,size=1): #30i
+	def readdir(self,dir,first=0,count=10,type=1,size=1): #30i type: 0=精簡 1=詳細
 		buffer=bytearray(0x100)
 		bdir=dir.encode()
 		buffer[0:len(bdir)]=bdir
 		st=self._req_rdsingle(1,1,0xb3,first,count,type,size,256,buffer)
+		# print('st readdir:',st)
 		x=[]
 		if st["len"]>=8:
 			for t in range(0,st["len"],128):
-				n=dict(zip(['type','datetime','unkn','size','attr','name','comment','proctimestamp'],unpack(">h12s6sII36s52s12s",st["data"][t:t+128])))
+				raw_entry = st["data"][t:t+128]
+				
+				
+				n=dict(zip(['type','datetime','unkn','size','attr','name','comment','proctimestamp'],
+					unpack(">H12s6sII36s52s12s", raw_entry)))
+				
 				del n['unkn']
-				if n['type']==1:
+				if n['type']!=0:
 					n['comment']=n['comment'].split(b'\0', 1)[0].decode()
 					n['datetime']=datetime.datetime(*unpack(">HHHHHH",n['datetime'])).timetuple()
-				else:
+				else:  # 目錄 (type=0)
 					n['comment']=None
 					n['size']=None
 					n['datetime']=None

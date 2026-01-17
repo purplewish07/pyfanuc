@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from pyfanuc import pyfanuc
 import time
-ip = '192.168.1.201'
+ip = '192.168.1.168'
 conn = pyfanuc(ip)
 st = time.time()
 i = 0
@@ -114,29 +114,34 @@ try:
         # print(cycle)
         # print(n)
         # conn.cnc_rdparam()
-        # print("SHOW dir")
-        # data1 = conn.readdir_complete("//MEMCARD/")
+        # progs = conn.listprog(start=1)
+        # print('Python ListProg:'); [print('  O%04d - size:%d bytes, comment:%s' % (k,v['size'],v['comment'])) for k,v in sorted(progs.items())]
+        # dirinfo = conn.readdir_info("//MEMCARD/")
+        # print('Python ReadDirInfo://MEMCARD/:', dirinfo)
+
+        print("SHOW dir")
+        data1 = conn.readdir_complete("//MEMCARD/")
         # print(data1)
 
         # print("SHOW //CNC_MEM/USER/PATH1/")
         # data1 = conn.readdir_complete("//CNC_MEM/USER/PATH1/")
         # print(data1)
-        # for n in data1:
-        #     print(n['name']+" ("+time.strftime("%c",n['datetime'])+ "|size:"+str(n['size'])+')'  if n['type']=='F' else '<'+n['name']+'>')
+        for n in data1:
+            print(n['name']+"("+ n['comment'] +")"+" <"+time.strftime("%c",n['datetime'])+ "|size:"+str(n['size'])+'>')
 
-        # pname = "O0011"
-        # data2 = conn.getprog(pname)
-        # print("\nGET PROGRAM", pname)
-        # print(data2)
-        # with open(pname + ".nc", "w", encoding="utf-8") as f:
-        #     f.write(data2)
-        # print(f"已儲存程式至 {pname}.nc")
+        pname = "O0011"
+        data2 = conn.getprog(pname)
+        print("\nGET PROGRAM", pname)
+        print(data2)
+        with open(pname + ".nc", "w", encoding="utf-8") as f:
+            f.write(data2)
+        print(f"已儲存程式至 {pname}.nc")
 
-        # conn.uploadprog(fullpath="//CNC_MEM/USER/PATH1/", content=data2)    
-        # print(f"已上傳程式至 //CNC_MEM/USER/PATH1/{pname}")
+        conn.uploadprog(fullpath="//CNC_MEM/USER/PATH1/", content=data2)    
+        print(f"已上傳程式至 //CNC_MEM/USER/PATH1/{pname}")
 
-        # conn.deleteprog(f"//CNC_MEM/USER/PATH1/{pname}")
-        # print(f"已刪除程式 //CNC_MEM/USER/PATH1/{pname}")
+        conn.deleteprog(f"//CNC_MEM/USER/PATH1/{pname}")
+        print(f"已刪除程式 //CNC_MEM/USER/PATH1/{pname}")
 
         #程式啟動 手動燈 Y29.1
         #異警 紅燈 Y27.2

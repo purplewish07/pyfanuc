@@ -1,0 +1,67 @@
+# C# / .NET standard gitignore
+
+# Build results
+[Bb]in/
+[Oo]bj/
+**/[Bb]in/
+**/[Oo]bj/
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# Visual Studio Code workspace
+.vscode/
+
+# Test and coverage
+TestResults/
+TestResult*/
+*.coverage
+*.coveragexml
+*.trx
+
+# NuGet
+packages/
+**/packages/*
+!**/packages/build/
+.nuget/
+*.nupkg
+*.snupkg
+
+# Artifacts
+artifacts/
+**/artifacts/
+
+# Publish output
+**/publish/
+
+# Generated code
+*.g.cs
+*.g.i.cs
+*.generated.cs
+
+# User-specific
+*.userprefs
+
+# Logs
+*.log
+logs/
+
+# Database/project files
+*.dbmdl
+*.mdf
+*.ldf
+
+# OS files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.tmp
