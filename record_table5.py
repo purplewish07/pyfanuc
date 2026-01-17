@@ -16,7 +16,6 @@ from datetime import datetime
 import platform
 import subprocess
 
-andon = 0
 volume = 13107 # 音量增益，範圍為 0 到 32768，預設為 32768 (100%)
 errlog=[]
 
@@ -134,6 +133,7 @@ def record(ip, q, i):
         if conn.connect():
             statinfo = conn.statinfo
             y = conn.readpmc(0, 2, 27, 3)
+            f = conn.readpmc(0, 1, 0, 1)
             
             # 檢測燈光狀態
             if (y.get(29) & 1):  # 綠燈
@@ -144,6 +144,11 @@ def record(ip, q, i):
                 stat = 4
             else:
                 stat = 0  # 沒有燈光
+
+            if not (f.get(0) & 32):
+                stl =0
+            else:
+                stl =1
             
             parts = conn.readmacro(3901).get(3901)
             total_raw = conn.readmacro(12399).get(12399)
@@ -153,7 +158,9 @@ def record(ip, q, i):
             ct = get_ct_formatted(conn.readparam2(-1, 6757, 6758))
             
             # 將數字轉成文字並前置填0湊滿4字元
+            print(conn.readprognum())
             prog = "O" + str(conn.readprognum()['main']).zfill(4)
+            print(f"({ip}) current program: {prog}, stl: {stl}")
             
             # 修正: 檢查 getproghead 的返回值類型
             try:
@@ -310,7 +317,6 @@ for name, row in newdf.iterrows():
         filename = fr".\sound\{name}已停機.mp3"
         print(f"播放音樂檔案: {filename}")
         play_mp3(filename)
-        andon += 0
         time.sleep(5)
 
 #update to db machines_realtime
@@ -470,6 +476,7 @@ ON t1.name = t2.name AND t1.datetime = t2.max_datetime
 # 確保 predf 的索引與 newdf 一致
 predf = pd.read_sql_query(sql, engine)
 predf = predf.set_index('name')
+predf = predf.reindex(newdf.index)
 
 # 格式化 ct 欄位（如果資料庫讀取的是 timedelta）
 if 'ct' in predf.columns:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from pyfanuc import pyfanuc
 import time
-ip = '192.168.1.169'
+ip = '192.168.1.201'
 conn = pyfanuc(ip)
 st = time.time()
 i = 0
@@ -38,15 +38,34 @@ try:
         #print(conn.sysinfo)
         stat = conn.statinfo['run']
         statinfo = conn.statinfo
+        print(f"機台狀態代碼: {stat}")
+        print(f"機台狀態資訊: {statinfo}")
         # print(ip,'|type:' + conn.sysinfo['cnctype'].decode() + 'i','|run_status: ' ,stat)
         # if stat ==0:
+        f = conn.readpmc(0, 1, 0, 1)
+        if not (f.get(0) & 32):
+            stl =0
+        else:
+            stl =1
+        print(f"STL: {stl}")
         parts = conn.readmacro(3901)
-        total = conn.readmacro(12399)
-        ng = conn.readmacro(12400)
+        total,ng = conn.readmacro(12399,12400)
+        # ng = conn.readmacro(12400)
         print(parts)
         print(total)
         print(ng)
+        pn = conn.readmacro(4114)
+        n = conn.readmacro(4314)
+        p = conn.readmacro(4315)
+        pp = conn.readmacro(4115)
+        t = conn.readmacro(4320)
+        pt = conn.readmacro(4120)
+        print(pn, n, pp, p, pt, t)
+        print(conn.readmacro(600, 630))
         # ct = conn.readmacro(6757,6758)
+
+        prun = conn.readmacro(3008)
+        print("prun:", prun)
         ct = conn.readparam2(-1, 6757, 6758)
         # 將ct轉換為HH:MM:SS格式
         if ct and 6757 in ct and 6758 in ct:
@@ -95,14 +114,29 @@ try:
         # print(cycle)
         # print(n)
         # conn.cnc_rdparam()
-        #print("SHOW //CNC_MEM/USER/PATH1/")
-        #data1 = conn.readdir_complete("//CNC_MEM/USER/PATH1/")
+        # print("SHOW dir")
+        # data1 = conn.readdir_complete("//MEMCARD/")
+        # print(data1)
+
+        # print("SHOW //CNC_MEM/USER/PATH1/")
+        # data1 = conn.readdir_complete("//CNC_MEM/USER/PATH1/")
         # print(data1)
         # for n in data1:
-        #     print(n['name']+" ("+time.strftime("%c",n['datetime'])+')' if n['type']=='F' else '<'+n['name']+'>')
-        # data2 = conn.getprog("O3000")
-        # print("\nGET PROGRAM O3000")
+        #     print(n['name']+" ("+time.strftime("%c",n['datetime'])+ "|size:"+str(n['size'])+')'  if n['type']=='F' else '<'+n['name']+'>')
+
+        # pname = "O0011"
+        # data2 = conn.getprog(pname)
+        # print("\nGET PROGRAM", pname)
         # print(data2)
+        # with open(pname + ".nc", "w", encoding="utf-8") as f:
+        #     f.write(data2)
+        # print(f"已儲存程式至 {pname}.nc")
+
+        # conn.uploadprog(fullpath="//CNC_MEM/USER/PATH1/", content=data2)    
+        # print(f"已上傳程式至 //CNC_MEM/USER/PATH1/{pname}")
+
+        # conn.deleteprog(f"//CNC_MEM/USER/PATH1/{pname}")
+        # print(f"已刪除程式 //CNC_MEM/USER/PATH1/{pname}")
 
         #程式啟動 手動燈 Y29.1
         #異警 紅燈 Y27.2
@@ -126,12 +160,13 @@ try:
         # print(alarm)
         #| readexecprog	| execute linecode |
         #| readprognum | actual main/run program |
-        print(conn.readexecprog(1000)) #當前執行code
+        # print(conn.readexecprog(1000)) #當前執行code
         #print(conn.readexecprog(100)['text'].split('\n')[0])
         print(conn.readprognum())
-        exec_prog_num = conn.readprognum()['main']
+        # exec_prog_num = conn.readprognum() or {}
         # 將數字轉成文字並前置填0湊滿4字元
-        exec_prog_str = "O" + str(exec_prog_num).zfill(4)
+        # exec_prog_str = "O" + str(exec_prog_num.get('main')).zfill(4)
+        exec_prog_str = "O" + str(conn.readprognum()['main']).zfill(4)
         #print(exec_prog_str)
         #print(conn.readprogname())
         file = conn.getproghead(exec_prog_str,3500).split('\n') #程式內容

@@ -43,3 +43,23 @@
 01,01,b9 read main program name  (FULLNAME i31)
 
 02,01,8001 read PMC
+Data Type
+| Typ | Description |
+|:-----------:|:-------|
+| 0 | byte |
+| 1 | short |
+| 2 | int32 |
+
+Memory Type
+| Typ | | Description |
+|:-----------:|:-------:|:-------|
+| 0 | G | uplink PMC to CNC |
+| 1 | F | downlink PMC from CNC |
+| 2 | Y | uplink PMC to Machine |
+| 3 | X | downlink PMC from Machine |
+| 4 | A | message |
+| 5 | R | internal Relays |
+| 6 | T | Timer |
+| 7 | K | Keep relays |
+| 8 | C | Counter |
+| 9 | D | Data |
