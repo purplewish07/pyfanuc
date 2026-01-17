@@ -3,3 +3,5 @@ __pychache__
 *.pyc
 .vs
 winloop_error.log
+*.nc
+Notifyfaillog.txt
